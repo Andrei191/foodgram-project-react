@@ -1,5 +1,15 @@
 version: '3.3'
 services:
+  db:
+    image: postgres:13.0-alpine    
+    volumes:
+      - /var/lib/postgresql/data/
+    env_file:
+      - ./.env 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: foodgram/Dockerfile
 
   frontend:
     build:
