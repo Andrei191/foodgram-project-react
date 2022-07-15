@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.http.response import HttpResponse, HttpResponseNotFound
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, status, views, viewsets
@@ -16,13 +16,19 @@ from .serializers import (
     ShoppingCartSerializer,
     TagListSerializer,
 )
+from .utils import (
+    create_file,
+    custom_delete,
+    custom_post,
+    get_ingredients_list_and_return_response,
+)
 
 from recipes.models import (  # isort:skip
     Favorite,  # isort:skip
     Ingridient,  # isort:skip
     Recipe,  # isort:skip
     ShoppingCart,  # isort:skip
-    Tag,  # isort:skip
+    Tag,  # isort: skip
 )  # isort:skip
 from users.models import Follow  # isort:skip
 
@@ -31,14 +37,7 @@ User = get_user_model()
 
 class FollowCreateAPIView(views.APIView):
     def post(self, request, id):
-        user_id = request.user.id
-        data = {"user": user_id, "following": id}
-        serializer = FollowCreateSerializer(
-            data=data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return custom_post(self, request, id, FollowCreateSerializer)
 
     def delete(self, request, id):
         user = request.user
@@ -46,10 +45,11 @@ class FollowCreateAPIView(views.APIView):
         deleting_obj = Follow.objects.all().filter(
             user=user, following=following
         )
-        if not deleting_obj:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        deleting_obj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return custom_delete(deleting_obj)
+        # if not deleting_obj:
+        #     return Response(status=status.HTTP_400_BAD_REQUEST)
+        # deleting_obj.delete()
+        # return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class FollowListAPIView(generics.ListAPIView):
@@ -106,35 +106,18 @@ class FavoriteAPIView(views.APIView):
     permission_classes = [AuthorOrAdminOnly]
 
     def post(self, request, id):
-        user_id = request.user.id
-        data = {"user": user_id, "recipes": id}
-        serializer = FavoriteSerializer(
-            data=data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return custom_post(self, request, id, FavoriteSerializer)
 
     def delete(self, request, id):
         user = request.user
         recipe = get_object_or_404(Recipe, id=id)
-        deleting_obj = Favorite.objects.all().filter(user=user, recipes=recipe)
-        if not deleting_obj:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        deleting_obj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        deleting_obj = Favorite.objects.all().filter(user=user, recipe=recipe)
+        return custom_delete(deleting_obj)
 
 
 class ShoppingCartAPIView(views.APIView):
     def post(self, request, id):
-        user_id = request.user.id
-        data = {"user": user_id, "recipe": id}
-        serializer = ShoppingCartSerializer(
-            data=data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return custom_post(self, request, id, ShoppingCartSerializer)
 
     def delete(self, request, id):
         user = request.user
@@ -142,50 +125,28 @@ class ShoppingCartAPIView(views.APIView):
         deleting_obj = ShoppingCart.objects.all().filter(
             user=user, recipe=recipe
         )
-        if not deleting_obj:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        deleting_obj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return custom_delete(deleting_obj)
 
 
 class DownloadShoppingCartAPIView(views.APIView):
     def get(self, request):
-        ingridients = {}
-        user = request.user
-        recipes_in_cart = ShoppingCart.objects.all().filter(user=user)
+        ingridients = (
+            ShoppingCart.objects.annotate(
+                summa=Sum("recipe__ingredients__ingredient__amount"),
+            )
+            .values(
+                "recipe__ingredients__name",
+                "recipe__ingredients__measurement_unit",
+                "summa",
+            )
+            .filter(
+                user=request.user,
+            )
+        )
+        unique_ingredients = {
+            x["recipe__ingredients__name"]: x for x in ingridients
+        }.values()
 
-        for obj in recipes_in_cart:
-            recipe = obj.recipe.recipe
-            for val in recipe.all():
-                name = val.ingredient.name
-                amount = val.amount
-                measurement_unit = val.ingredient.measurement_unit
-                if name not in ingridients:
-                    ingridients[name] = {
-                        "measurement_unit": measurement_unit,
-                        "amount": amount,
-                    }
-                else:
-                    ingridients[name]["amount"] += amount
-
-        with open("Ingredients_list.txt", "w", encoding="utf-8") as file:
-            for key in ingridients:
-                file.write(
-                    (
-                        f'{key} - {ingridients[key]["amount"]}'
-                        f'{ingridients[key]["measurement_unit"]} \n'
-                    )
-                )
-
+        create_file(unique_ingredients)
         file_location = "./Ingredients_list.txt"
-        try:
-            with open(file_location, "r", encoding="utf-8") as f:
-                file_data = f.read()
-
-            response = HttpResponse(file_data, content_type="text/plain")
-            response[
-                "Content-Disposition"
-            ] = 'attachment; filename="Ingredients_list.txt"'
-        except IOError:
-            response = HttpResponseNotFound("<h1>File not exist</h1>")
-        return response
+        return get_ingredients_list_and_return_response(file_location)

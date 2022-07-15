@@ -38,8 +38,7 @@ class CustomUserSerializer(UserSerializer):
         request = self.context.get("request")
         if request.user.is_anonymous:
             return False
-        user = request.user
-        following = obj.follower.filter(user=obj, following=user)
+        following = obj.follower.filter(user=obj, following=request.user)
 
         return following.exists()
 
@@ -87,8 +86,10 @@ class FollowRecipeSerializers(serializers.ModelSerializer):
 
 class FollowListSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
+    recipe = serializers.SerializerMethodField()
+    recipes_count = serializers.IntegerField(
+        source="recipe.count", read_only=True
+    )
 
     class Meta:
         model = User
@@ -98,7 +99,7 @@ class FollowListSerializer(serializers.ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "recipes",
+            "recipe",
             "is_subscribed",
             "recipes_count",
         )
@@ -106,11 +107,10 @@ class FollowListSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get("request")
-        user = request.user
-        following = obj.follower.filter(user=obj, following=user)
+        following = obj.follower.filter(user=obj, following=request.user)
         return following.exists()
 
-    def get_recipes(self, obj):
+    def get_recipe(self, obj):
         request = self.context.get("request")
         context = {"request": request}
         recipes = obj.recipe.all()
@@ -118,8 +118,8 @@ class FollowListSerializer(serializers.ModelSerializer):
             recipes, context=context, many=True
         ).data
 
-    def get_recipes_count(self, obj):
-        return obj.recipe.all().count()
+    # def get_recipes_count(self, obj):
+    #    return obj.recipe.all().count()
 
 
 class TagListSerializer(serializers.ModelSerializer):
@@ -179,7 +179,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
         if request.user.is_anonymous:
             return False
         user_id = request.user.id
-        favorite = Favorite.objects.all().filter(user=user_id, recipes=obj)
+        favorite = Favorite.objects.all().filter(user=user_id, recipe=obj)
         return favorite.exists()
 
     def get_is_in_shopping_cart(self, obj):
@@ -285,22 +285,26 @@ class ShowRecipeSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    recipes = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:
         model = Favorite
         fields = ("user", "recipe")
 
-    def validate_recipes(self, data):
+    def validate_recipe(self, data):
         user = self.context.get("request").user
-        recipe = self.initial_data.get("recipes")
-        if Favorite.objects.all().filter(user=user, recipes=recipe).exists():
+        new_recipe = self.initial_data.get("recipe")
+        if (
+            Favorite.objects.all()
+            .filter(user=user, recipe=new_recipe)
+            .exists()
+        ):
             raise ValidationError("Этот рецепт у вас уже в избранном")
         return data
 
     def to_representation(self, instance):
-        return ShowRecipeSerializer(instance.recipes).data
+        return ShowRecipeSerializer(instance.recipe).data
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
