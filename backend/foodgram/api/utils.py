@@ -1,5 +1,4 @@
 from django.http.response import HttpResponse, HttpResponseNotFound
-from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -38,7 +37,7 @@ def custom_post(self, request, id, custom_serializer):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-def custom_delete(deleting_obj):
+def custom_delete(deleting_obj, following):
     if not deleting_obj:
         return Response(status=status.HTTP_400_BAD_REQUEST)
     deleting_obj.delete()

@@ -118,9 +118,6 @@ class FollowListSerializer(serializers.ModelSerializer):
             recipes, context=context, many=True
         ).data
 
-    # def get_recipes_count(self, obj):
-    #    return obj.recipe.all().count()
-
 
 class TagListSerializer(serializers.ModelSerializer):
     class Meta:

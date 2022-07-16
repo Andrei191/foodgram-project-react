@@ -2,8 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, status, views, viewsets
-from rest_framework.response import Response
+from rest_framework import filters, generics, views, viewsets
 
 from .permissions import AuthorOrAdminOnly, ReadOnly
 from .serializers import (
@@ -40,16 +39,15 @@ class FollowCreateAPIView(views.APIView):
         return custom_post(self, request, id, FollowCreateSerializer)
 
     def delete(self, request, id):
+        following = User.following.all()
         user = request.user
         following = get_object_or_404(User, id=id)
         deleting_obj = Follow.objects.all().filter(
             user=user, following=following
         )
-        return custom_delete(deleting_obj)
-        # if not deleting_obj:
-        #     return Response(status=status.HTTP_400_BAD_REQUEST)
-        # deleting_obj.delete()
-        # return Response(status=status.HTTP_204_NO_CONTENT)
+        return custom_delete(
+            deleting_obj,
+        )
 
 
 class FollowListAPIView(generics.ListAPIView):
