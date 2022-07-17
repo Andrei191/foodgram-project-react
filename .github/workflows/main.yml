@@ -41,7 +41,7 @@ jobs:
         # Пуш образа в Docker Hub 
         uses: docker/build-push-action@v2 
         with:
-          context: foodgram
+          context: backend/foodgram
           push: true
           tags: andrei191000/foodgram
   deploy:
