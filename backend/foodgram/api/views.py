@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, status, views, viewsets
+from rest_framework import generics, status, views, viewsets
 from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
