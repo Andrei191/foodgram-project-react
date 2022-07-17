@@ -43,7 +43,7 @@ jobs:
         with:
           context: backend/foodgram
           push: true
-          tags: andrei191000/foodgram
+          tags: andrei191000/foodgram:backend
   deploy:
     runs-on: ubuntu-latest
     needs: build_and_push_to_docker_hub
