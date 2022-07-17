@@ -1,7 +1,7 @@
 import json
 
 from django.core.management.base import BaseCommand
-from recipes.models import Ingridients
+from recipes.models import Ingridient
 
 
 class Command(BaseCommand):
@@ -11,7 +11,7 @@ class Command(BaseCommand):
             data = json.load(f)
 
             for val in data:
-                ingridient = Ingridients()
+                ingridient = Ingridient()
                 ingridient.name = val["name"]
                 ingridient.measurement_unit = val["measurement_unit"]
                 ingridient.save()
