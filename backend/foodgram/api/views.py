@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, status, views, viewsets
 from rest_framework.response import Response
 
+from .filters import IngredientFilter, RecipeFilter
 from .permissions import AuthorOrAdminOnly, ReadOnly
 from .serializers import (
     FavoriteSerializer,
@@ -78,9 +79,8 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     permission_classes = [
         ReadOnly,
     ]
-    filter_backends = [
-        filters.SearchFilter,
-    ]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
     search_fields = ("^name",)
 
 
@@ -91,7 +91,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         AuthorOrAdminOnly,
     ]
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ("tags__name",)
+    filterset_class = RecipeFilter
     actions_list = ["POST", "PATCH"]
 
     def get_permissions(self):
