@@ -11,7 +11,7 @@ services:
     restart: always
 
   backend:
-    image: andrei191000/foodgram
+    image: andrei191000/foodgram:v1
     restart: always
     volumes:
       - static_value:/app/static/
@@ -22,7 +22,7 @@ services:
       - ./.env
 
   frontend:
-    image: andrei191000/foodgram
+    image: andrei191000/foodgram:v1
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
