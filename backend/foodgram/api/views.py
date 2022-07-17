@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, views, viewsets
+from rest_framework import filters, generics, status, views, viewsets
+from rest_framework.response import Response
 
 from .permissions import AuthorOrAdminOnly, ReadOnly
 from .serializers import (
@@ -36,18 +37,20 @@ User = get_user_model()
 
 class FollowCreateAPIView(views.APIView):
     def post(self, request, id):
-        return custom_post(self, request, id, FollowCreateSerializer)
+        return custom_post(
+            self, request, id, FollowCreateSerializer, "following"
+        )
 
     def delete(self, request, id):
-        following = User.following.all()
         user = request.user
         following = get_object_or_404(User, id=id)
         deleting_obj = Follow.objects.all().filter(
             user=user, following=following
         )
-        return custom_delete(
-            deleting_obj,
-        )
+        if not deleting_obj:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        deleting_obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class FollowListAPIView(generics.ListAPIView):
@@ -62,6 +65,7 @@ class FollowListAPIView(generics.ListAPIView):
 class TagsViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagListSerializer
+    pagination_class = None
     permission_classes = [
         ReadOnly,
     ]
@@ -70,6 +74,7 @@ class TagsViewSet(viewsets.ModelViewSet):
 class IngredientsViewSet(viewsets.ModelViewSet):
     queryset = Ingridient.objects.all()
     serializer_class = IngridientsListSerializer
+    pagination_class = None
     permission_classes = [
         ReadOnly,
     ]
@@ -104,26 +109,18 @@ class FavoriteAPIView(views.APIView):
     permission_classes = [AuthorOrAdminOnly]
 
     def post(self, request, id):
-        return custom_post(self, request, id, FavoriteSerializer)
+        return custom_post(self, request, id, FavoriteSerializer, "recipe")
 
     def delete(self, request, id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=id)
-        deleting_obj = Favorite.objects.all().filter(user=user, recipe=recipe)
-        return custom_delete(deleting_obj)
+        return custom_delete(self, request, id, Favorite)
 
 
 class ShoppingCartAPIView(views.APIView):
     def post(self, request, id):
-        return custom_post(self, request, id, ShoppingCartSerializer)
+        return custom_post(self, request, id, ShoppingCartSerializer, "recipe")
 
     def delete(self, request, id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=id)
-        deleting_obj = ShoppingCart.objects.all().filter(
-            user=user, recipe=recipe
-        )
-        return custom_delete(deleting_obj)
+        return custom_delete(self, request, id, ShoppingCart)
 
 
 class DownloadShoppingCartAPIView(views.APIView):
