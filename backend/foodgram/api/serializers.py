@@ -86,7 +86,7 @@ class FollowRecipeSerializers(serializers.ModelSerializer):
 
 class FollowListSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    recipe = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField(
         source="recipe.count", read_only=True
     )
@@ -110,7 +110,7 @@ class FollowListSerializer(serializers.ModelSerializer):
         following = obj.follower.filter(user=obj, following=request.user)
         return following.exists()
 
-    def get_recipe(self, obj):
+    def get_recipes(self, obj):
         request = self.context.get("request")
         context = {"request": request}
         recipes = obj.recipe.all()
