@@ -24,7 +24,7 @@ class CustomUserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
+        model = User  # new
         fields = (
             "email",
             "id",
