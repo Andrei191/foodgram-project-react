@@ -60,7 +60,8 @@ class FollowListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return User.objects.all().filter(following__user=user)
+        new_following = User.objects.all().filter(following__user=user)
+        return new_following
 
 
 class TagsViewSet(viewsets.ModelViewSet):

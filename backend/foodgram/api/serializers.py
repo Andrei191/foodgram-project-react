@@ -39,7 +39,6 @@ class CustomUserSerializer(UserSerializer):
         if request.user.is_anonymous:
             return False
         following = obj.follower.filter(user=obj, following=request.user)
-
         return following.exists()
 
 
@@ -48,7 +47,13 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 
     class Meta:
         model = User
-        fields = ("email", "password", "username", "first_name", "last_name")
+        fields = (
+            "email",
+            "password",
+            "username",
+            "first_name",
+            "last_name",
+        )
 
 
 class FollowCreateSerializer(serializers.ModelSerializer):
@@ -81,7 +86,12 @@ class FollowCreateSerializer(serializers.ModelSerializer):
 class FollowRecipeSerializers(serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = ("id", "name", "image", "cooking_time")
+        fields = (
+            "id",
+            "name",
+            "image",
+            "cooking_time",
+        )
 
 
 class FollowListSerializer(serializers.ModelSerializer):
@@ -107,6 +117,8 @@ class FollowListSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get("request")
+        if request.user.is_anonymous:
+            return False
         following = obj.follower.filter(user=obj, following=request.user)
         return following.exists()
 
@@ -122,7 +134,12 @@ class FollowListSerializer(serializers.ModelSerializer):
 class TagListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ("id", "name", "color", "slug")
+        fields = (
+            "id",
+            "name",
+            "color",
+            "slug",
+        )
 
 
 class IngridientsListSerializer(serializers.ModelSerializer):
@@ -140,7 +157,12 @@ class ShowRecipeIngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeIngredient
-        fields = ("id", "name", "measurement_unit", "amount")
+        fields = (
+            "id",
+            "name",
+            "measurement_unit",
+            "amount",
+        )
 
 
 class RecipeListSerializer(serializers.ModelSerializer):
@@ -196,7 +218,10 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeIngredient
-        fields = ("id", "amount")
+        fields = (
+            "id",
+            "amount",
+        )
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -278,7 +303,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 class ShowRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = ("id", "name", "image", "cooking_time")
+        fields = (
+            "id",
+            "name",
+            "image",
+            "cooking_time",
+        )
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
