@@ -57,7 +57,6 @@ class FollowCreateAPIView(views.APIView):
 class FollowListAPIView(generics.ListAPIView):
     queryset = Follow.objects.all()
     serializer_class = FollowListSerializer
-    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user

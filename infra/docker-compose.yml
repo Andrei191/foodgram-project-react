@@ -2,8 +2,10 @@ version: '3.8'
 services:
   db:
     image: postgres:13.0-alpine
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
-      - '5432:5432'
+      - '5432'
     volumes:
       - /var/lib/postgresql/data/
     env_file:
@@ -11,7 +13,9 @@ services:
     restart: always
 
   backend:
-    image: andrei191000/foodgram:backend
+    build:
+      context: ../backend/foodgram
+      dockerfile: Dockerfile
     restart: always
     volumes:
       - static_value:/app/static/
@@ -22,7 +26,9 @@ services:
       - ../backend/foodgram/foodgram/.env
 
   frontend:
-    image: andrei191000/foodgram:frontend
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
