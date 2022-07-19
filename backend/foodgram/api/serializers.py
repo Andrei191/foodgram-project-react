@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.db.models import F
 from django.forms import ValidationError
 from djoser.serializers import UserCreateSerializer, UserSerializer
@@ -6,7 +5,7 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from users.models import Follow  # isort:skip
+from users.models import Follow, User  # isort:skip
 from recipes.models import (  # isort:skip
     Favorite,  # isort:skip
     Ingridient,  # isort:skip
@@ -15,8 +14,6 @@ from recipes.models import (  # isort:skip
     ShoppingCart,  # isort:skip
     Tag,  # isort:skip
 )  # isort:skip
-
-User = get_user_model()
 
 
 class CustomUserSerializer(UserSerializer):
@@ -38,7 +35,8 @@ class CustomUserSerializer(UserSerializer):
         request = self.context.get("request")
         if request.user.is_anonymous:
             return False
-        following = obj.follower.filter(user=obj, following=request.user)
+        user = request.user
+        following = obj.follower.filter(user=obj, following=user)
         return following.exists()
 
 
@@ -64,7 +62,10 @@ class FollowCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Follow
-        fields = ("user", "following")
+        fields = (
+            "user",
+            "following",
+        )
         validators = [
             UniqueTogetherValidator(
                 queryset=Follow.objects.all(),
@@ -79,7 +80,6 @@ class FollowCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Вы не можете подписаться на самого себя!"
             )
-
         return value
 
 
@@ -96,9 +96,9 @@ class FollowRecipeSerializers(serializers.ModelSerializer):
 
 class FollowListSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    recipe = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField(
-        source="recipe.count", read_only=True
+        source="recipes.count", read_only=True
     )
 
     class Meta:
@@ -109,7 +109,7 @@ class FollowListSerializer(serializers.ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "recipe",
+            "recipes",
             "is_subscribed",
             "recipes_count",
         )
@@ -119,13 +119,14 @@ class FollowListSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request.user.is_anonymous:
             return False
-        following = obj.follower.filter(user=obj, following=request.user)
+        user = request.user
+        following = obj.follower.filter(user=obj, following=user)
         return following.exists()
 
-    def get_recipe(self, obj):
+    def get_recipes(self, obj):
         request = self.context.get("request")
         context = {"request": request}
-        recipes = obj.recipe.all()
+        recipes = obj.recipes.all()
         return FollowRecipeSerializers(
             recipes, context=context, many=True
         ).data
@@ -283,15 +284,22 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def validate_ingredients(self, data):
+    def validate(self, data):
         ingredients = self.initial_data.get("ingredients")
         if ingredients == []:
-            raise ValidationError("Необходимо выбрать хотя бы один ингредиент")
+            raise ValidationError(
+                {"Ошибка": "Необходимо выбрать хотя бы один ингредиент"}
+            )
+        amounts = data.get("ingredients")
+        if [item for item in amounts if item["amount"] < 1]:
+            raise serializers.ValidationError(
+                {"amount": "Минимальное количество ингридиента 1"}
+            )
         for ingredient in ingredients:
-            if int(ingredient["amount"]) <= 0:
-                raise ValidationError(
-                    "Убедитесь, что это значение больше или равно 1."
-                )
+            if ingredients.count(ingredient) > 1:
+                id = ingredient["id"]
+                name = Ingridient.objects.all().get(id=id).name
+                raise ValidationError({f"{name}": f"{name} уже есть в списке"})
         return data
 
     def to_representation(self, recipe):

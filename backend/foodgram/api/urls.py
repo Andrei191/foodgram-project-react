@@ -2,17 +2,18 @@ from django.urls import include, path
 from djoser import views
 from rest_framework.routers import SimpleRouter
 
-from .views import (
-    DownloadShoppingCartAPIView,
-    FavoriteAPIView,
-    FollowCreateAPIView,
-    FollowListAPIView,
-    IngredientsViewSet,
-    RecipesViewSet,
-    ShoppingCartAPIView,
-    TagsViewSet,
-)
+from .views import (  # isort:skip
+    DownloadShoppingCartAPIView,  # isort:skip
+    FavoriteAPIView,  # isort:skip
+    FollowCreateAPIView,  # isort:skip
+    FollowListAPIView,  # isort:skip
+    IngredientsViewSet,  # isort:skip
+    RecipesViewSet,  # isort:skip
+    ShoppingCartAPIView,  # isort:skip
+    TagsViewSet,  # isort:skip
+)  # isort:skip
 
+# isort:skip
 urlpatterns = []
 
 router = SimpleRouter()

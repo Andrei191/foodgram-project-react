@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -6,24 +5,26 @@ from rest_framework import generics, status, views, viewsets
 from rest_framework.response import Response
 
 from .filters import IngredientFilter, RecipeFilter
-from .permissions import AuthorOrAdminOnly, ReadOnly
-from .serializers import (
-    FavoriteSerializer,
-    FollowCreateSerializer,
-    FollowListSerializer,
-    IngridientsListSerializer,
-    RecipeCreateSerializer,
-    RecipeListSerializer,
-    ShoppingCartSerializer,
-    TagListSerializer,
-)
-from .utils import (
-    create_file,
-    custom_delete,
-    custom_post,
-    get_ingredients_list_and_return_response,
-)
+from .permissions import AuthorOrAdmin, ReadOnly
 
+from .serializers import (  # isort:skip
+    FavoriteSerializer,  # isort:skip
+    FollowCreateSerializer,  # isort:skip
+    FollowListSerializer,  # isort:skip
+    IngridientsListSerializer,  # isort:skip
+    RecipeCreateSerializer,  # isort:skip
+    RecipeListSerializer,  # isort:skip
+    ShoppingCartSerializer,  # isort:skip
+    TagListSerializer,  # isort:skip
+)  # isort:skip
+from .utils import (  # isort:skip
+    create_file,  # isort:skip
+    custom_delete,  # isort:skip
+    custom_post,  # isort:skip
+    get_ingredients_list_and_return_response,  # isort:skip
+)  # isort:skip
+
+# isort:skip
 from recipes.models import (  # isort:skip
     Favorite,  # isort:skip
     Ingridient,  # isort:skip
@@ -31,16 +32,21 @@ from recipes.models import (  # isort:skip
     ShoppingCart,  # isort:skip
     Tag,  # isort: skip
 )  # isort:skip
-from users.models import Follow  # isort:skip
+from users.models import Follow, User  # isort:skip
 
-User = get_user_model()
+# User = get_user_model()
 
 
 class FollowCreateAPIView(views.APIView):
     def post(self, request, id):
-        return custom_post(
-            self, request, id, FollowCreateSerializer, "following"
+        user_id = request.user.id
+        data = {"user": user_id, "following": id}
+        serializer = FollowCreateSerializer(
+            data=data, context={"request": request}
         )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id):
         user = request.user
@@ -54,16 +60,6 @@ class FollowCreateAPIView(views.APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class FollowListAPIView(generics.ListAPIView):
-    queryset = Follow.objects.all()
-    serializer_class = FollowListSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        new_following = User.objects.all().filter(following__user=user)
-        return new_following
-
-
 class TagsViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagListSerializer
@@ -71,6 +67,16 @@ class TagsViewSet(viewsets.ModelViewSet):
     permission_classes = [
         ReadOnly,
     ]
+
+
+class FollowListAPIView(generics.ListAPIView):
+    queryset = Follow.objects.all()
+    serializer_class = FollowListSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        new_queryset = User.objects.all().filter(following__user=user)
+        return new_queryset
 
 
 class IngredientsViewSet(viewsets.ModelViewSet):
@@ -82,18 +88,18 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     ]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
-    search_fields = ("^name",)
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeListSerializer
     permission_classes = [
-        AuthorOrAdminOnly,
+        AuthorOrAdmin,
     ]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     actions_list = ["POST", "PATCH"]
+    lookup_field = "id"
 
     def get_permissions(self):
         if self.action == "retrieve":
@@ -107,13 +113,26 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
 
 class FavoriteAPIView(views.APIView):
-    permission_classes = [AuthorOrAdminOnly]
+    permission_classes = [AuthorOrAdmin]
 
     def post(self, request, id):
-        return custom_post(self, request, id, FavoriteSerializer, "recipe")
+        user_id = request.user.id
+        data = {"user": user_id, "recipe": id}
+        serializer = FavoriteSerializer(
+            data=data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id):
-        return custom_delete(self, request, id, Favorite)
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        deleting_obj = Favorite.objects.all().filter(user=user, recipe=recipe)
+        if not deleting_obj:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        deleting_obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ShoppingCartAPIView(views.APIView):

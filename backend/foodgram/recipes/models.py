@@ -34,7 +34,7 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="recipe",
+        related_name="recipes",
         verbose_name="автор",
     )
     tags = models.ManyToManyField(Tag, through="RecipeTag")
@@ -47,7 +47,7 @@ class Recipe(models.Model):
         Ingridient, through="RecipeIngredient", verbose_name="ингредиент"
     )
     text = models.CharField("Описание", max_length=500)
-    cooking_time = models.IntegerField()
+    cooking_time = models.PositiveIntegerField()
     pub_date = models.DateTimeField("Дата публикации", auto_now_add=True)
 
     class Meta:
