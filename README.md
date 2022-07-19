@@ -109,7 +109,7 @@ admin
 password:
 
 ```
-adminadmin
+admin
 ```
 
 ---
