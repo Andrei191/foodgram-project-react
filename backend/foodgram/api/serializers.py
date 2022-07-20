@@ -248,10 +248,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             ingredient_id = ingredient["id"]
             amount = ingredient["amount"]
-            if RecipeIngredient.objects.filter(
-                recipe=recipe, ingredient=ingredient_id
-            ).exists():
-                amount += F("amount")
             RecipeIngredient.objects.update_or_create(
                 recipe=recipe,
                 ingredient=ingredient_id,
