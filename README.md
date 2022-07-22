@@ -116,5 +116,5 @@ admin
 
 ---
 
-Автор: Автор:
+Автор:
 <a href="https://github.com/Andrei191"> Карасев Андрей </a>.
