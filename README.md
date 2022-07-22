@@ -1,4 +1,4 @@
-[![Django-app workflow](https://github.com/Andrei191/foodgram-project-react/actions/workflows/foodgram-project-react_main.yml/badge.svg)](https://github.com/Andrei191/foodgram-project-react/actions/workflows/main.yml)
+[![Django-app workflow](https://github.com/Andrei191/foodgram-project-react/actions/workflows/main.yml/badge.svg)](https://github.com/Andrei191/foodgram-project-react/actions/workflows/main.yml)
 
 ### Foodgram - сайт с рецептами
 
